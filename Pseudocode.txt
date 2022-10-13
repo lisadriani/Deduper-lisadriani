@@ -1,0 +1,88 @@
+THE PROBLEM: 
+    UMIs are included in these files to separate PCR duplicates from true duplicates and for better variant calling. 
+    We do not want duplications of each PCR duplicate and need to only keep one. 
+    In a SAM file we have all the information we need, including the UMIs, and information about where the sequence is found on the chromosome, position etc. 
+    We need to make sure that each piece of information is exactly the same so we know that it is a PCR duplicate.
+    We want start position, not 1 based left most based. 
+
+
+SETUP: 
+
+    -argparse: -f, --file: designates absolute file path to sorted sam file
+                -o, --outfile: designates absolute file path to sorted sam file
+                -u, --umi: designates file containing the list of UMIs
+                -h, --help: prints a USEFUL help message (see argparse docs
+
+
+    -All beginning lines (starting with @s) put into list to be added to the output SAM file in the same format
+        write @ lines into open SAM files. 
+    -Make set with known 96 UMIs
+    -Samtools SORT
+    -{dictionary} of 4 knowns:  (or a set)
+        key: tuple (chrom,startpos,st,UMI)
+        value: count? ((not the SAM line))
+
+THE CODE:
+
+While true, until the end of the file ""
+    -Take the first entry of SAM file (line doesn't start with @)
+        load entire entry into a list or something (for writing at the end)
+        save line into column separated variable
+    -UMI from Qname in col 0 (base 0) save as variable UMI 
+        separate column 0 by colon to get the last portion of the column 
+        make sure its UMI in known set
+            if not, discard-continue back to original SAM file
+    -Grab Position-- col 3 (base 0) as an int value in a variable POS
+    -check strand flag col 1(base 0)
+        analyze bitflag for rev comp or not-gives T/F from high level function. 
+            if true (minus strand):
+                take "M" values from cigar string and add M value and -1 (for technical accuracy)
+                Check if right soft clipped (not left bc we want start position)
+                correct POS if right soft clipped (add value before S)
+                check if N in cigar string
+                    correct POS for N
+                Check if D in cigar string
+                    correct POS for D
+            if false (plus strand):
+                -Check if soft clipped: Cigar String on Col 5 (base 0)
+                    Take the number before the S and adjust POS accordingly (with high level function)
+    -RName in col 2(base 0), save as variable CHROM
+    -Check if UMI,POS,CHROM,STRAND exactly in dictionary
+        if NOT IN: put UMI,POS,CHROM,STRAND into dictionary
+            write line from the saved list of original line to SAM file
+            empty the list that holds the SAM line
+            add to dictionary count for that position
+    -   If IN dictionary: drop line.
+            empty list that holds the SAM line
+            add to dictionary count for that position.
+
+HIGH LEVEL FUNCTIONS:
+
+def bitwise_strand_check(column)
+    '''Takes a bit flag and returns T/F where T is reverse comp flag'''
+    bitW = int(column[1])
+    if((bitW & 16)) == 16:
+        print("T") 
+    else:
+        print("F")
+    return
+
+def get_UMI(POS0):
+    '''Takes first column of SAM file and extracts the UMI'''
+    splits=POS0.split(":")
+    UMI = str(splits[7])
+    return UMI
+
+def correct_left_soft(cigar,position):
+    '''Takes the cigar string (as a string) and the position from the SAM file and corrects the position if soft clipped on left most position'''
+    return start_position
+
+def fix_minus_strand(cigar,position):
+    '''Takes the cigar string (as a string) and the position from the SAM file and correct them based off of right hand soft clipping, deletions, and introns). '''
+    return start_position
+
+assert correct_left_soft("17S12M",20) == 3, "Soft Clip Position Adjustment working"
+assert bitwise_strand_check(99) == "F", "Bitwise working for plus strand"
+assert bitwise_strand_check(147) == "T", "Bitwise working for - strand"
+assert get_UMI("NS500451:154:HWKTMBGXX:1:11101:24260:1121:CTGTTCAC") == "CTGTTCAC", "Get UMI working. 
+assert fix_minus_strand("17S12M10S","20")== 41, "Fix minus working"
