@@ -16,6 +16,8 @@ __version__ = "0.4"         # Read way more about versioning here:
 DNA_bases = "ACGTNagctn"
 RNA_bases = "ACGUNagcun"
 
+import re 
+
 def convert_phred(letter: str) -> int:
     """Converts a single character into a phred score"""
     return (ord(letter)) - 33
@@ -91,13 +93,13 @@ def write_fastq_file(filename, array_name):
     return
 
 def bitwise_strand_check(POS1):
-    '''Takes a bit flag and returns T/F where T is reverse comp flag'''
+    '''Takes a bit flag and returns +/- where "-" is reverse complement, minus strand.'''
     bitW = int(POS1)
     if((bitW & 16)) == 16:
-        print("T") 
+        position = "+"
     else:
-        print("F")
-    return
+        position = "-"
+    return position
 
 def get_UMI(POS0):
     '''Takes first column of SAM file and extracts the UMI'''
@@ -105,12 +107,33 @@ def get_UMI(POS0):
     UMI = str(splits[7])
     return UMI
 
-def correct_left_soft(cigar,position):
-    '''Takes the cigar string (as a string) and the position from the SAM file and corrects the position if soft clipped on left most position'''
+def correct_pos(cigar,strand,position):
+    '''Takes the cigar string (as a string) and the position from the SAM file, and strand, and corrects for starting position'''
     cig = str(cigar)
-    soft_num = cig.split("S")[0]
-    start_position = int(position) - int(soft_num)
+    position = int(position)
+    if strand == "+": # the plus strand
+        findit = re.findall(r'(^\d+)([S]{1})',cig) #find the soft clipping at the beginning of the strand. i.e.[('20', 'S')]
+        if findit != []: #if anything is found at all,
+            soft = findit[0][0] # this will take the integer in front of the S -- data = [('20', 'S')]
+            soft = int(soft)
+            start_position = position - soft #subtract it from the position for the correct start position
+        else: #if there is no left hand soft clipping
+            start_position = position #position is your start position. 
+    if strand == "-":
+        findit = re.findall(r'(\d+)([A-Z]{1})',cig) # this will put data into tuples of # and letter i.e. 
+        for letters in findit: 
+            if letters[1] == "M":
+                position = position + int(letters[0]) #adjust it!
+            if letters[1] == "D":
+                position = position + int(letters[0])
+            if letters[1] == "N":
+                position = position + int(letters[0])
+        if findit[-1][1]== "S":
+                position = position + int(findit[-1][0])
+        start_position = position - 1 #subtract one because the position is inclusive. this is more technically correct. 
+
     return start_position
+
 
 if __name__ == "__main__":
     assert convert_phred("E") == 36, "convert_phred working!"
@@ -132,5 +155,3 @@ if __name__ == "__main__":
     #return
     # write tests for functions above
     # this if statement will ensure that the assert statements only run when you want to test it, and not in a jn for example.return
-
-
