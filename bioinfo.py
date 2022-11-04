@@ -96,9 +96,9 @@ def bitwise_strand_check(POS1):
     '''Takes a bit flag and returns +/- where "-" is reverse complement, minus strand.'''
     bitW = int(POS1)
     if((bitW & 16)) == 16:
-        position = "+"
-    else:
         position = "-"
+    else:
+        position = "+"
     return position
 
 def get_UMI(POS0):
@@ -111,6 +111,7 @@ def correct_pos(cigar,strand,position):
     '''Takes the cigar string (as a string) and the position from the SAM file, and strand, and corrects for starting position'''
     cig = str(cigar)
     position = int(position)
+    thesum = 0
     if strand == "+": # the plus strand
         findit = re.findall(r'(^\d+)([S]{1})',cig) #find the soft clipping at the beginning of the strand. i.e.[('20', 'S')]
         if findit != []: #if anything is found at all,
@@ -121,17 +122,17 @@ def correct_pos(cigar,strand,position):
             start_position = position #position is your start position. 
     if strand == "-":
         findit = re.findall(r'(\d+)([A-Z]{1})',cig) # this will put data into tuples of # and letter i.e. 
-        for letters in findit: 
+        for letters in findit:
             if letters[1] == "M":
                 position = position + int(letters[0]) #adjust it!
             if letters[1] == "D":
                 position = position + int(letters[0])
             if letters[1] == "N":
                 position = position + int(letters[0])
-        if findit[-1][1]== "S":
-                position = position + int(findit[-1][0])
+        softfindit = re.findall(r'(\d+)(S$)',cig)
+        if softfindit !=[]:
+            position = position + int(softfindit[0][0])
         start_position = position - 1 #subtract one because the position is inclusive. this is more technically correct. 
-
     return start_position
 
 

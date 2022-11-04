@@ -5,11 +5,10 @@ import argparse
 import bioinfo
 
 def get_args():
-    parser = argparse.ArgumentParser(description="This code will take a sorted, uniquely mapped SAM file with a known set of UMIs and return a deduplicated SAM file when the known UMI, Chromosome, Strand, and corrected Start position are all the same.")
+    parser = argparse.ArgumentParser(description="This code will take a sorted, uniquely mapped SAM file with a known set of UMIs and return a deduplicated SAM file when the known UMI, Chromosome, Strand, and corrected Start position are all the same. The first duplicate will be written to the output file. ")
     parser.add_argument("-f",  "--file", help="designates absolute file path to sorted sam file", required = True)
     parser.add_argument("-o", "--outfile", help = "designates absolute file path to sorted sam file", required = True)
     parser.add_argument("-u", "--umi", help = "designates file containing the list of UMIs", required = True)
-    #parser.add_argument("-h", "--help", help = "This code takes uniquely mapped, samtools-sorted SAM file and deduplicates by known UMIs")
     return parser.parse_args()
 	
 args = get_args()
@@ -41,8 +40,8 @@ for line in SAM:
         if umi in UMIset: #if its in our known list of UMIS
             POS = columns[3] #save the position 
             cigar = columns[5] #save the cigar string
-            strand = bioinfo.bitwise_strand_check(columns[1]) #get a "+" or "-" value for the strand, to put into correct_pos
             CHROM = columns[2] #get the chromsome
+            strand = bioinfo.bitwise_strand_check(columns[1]) #get a "+" or "-" value for the strand, to put into correct_pos
             POS = bioinfo.correct_pos(cigar,strand,POS) #correct it! depending on strand and cigar string, adjust position
             if (umi,POS,strand,CHROM) in requirements: #if this is already seen, increase count and don't write out
                 requirements[(umi,POS,strand,CHROM)]+= 1
