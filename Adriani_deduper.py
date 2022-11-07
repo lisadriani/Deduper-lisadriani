@@ -5,7 +5,7 @@ import argparse
 import bioinfo
 
 def get_args():
-    parser = argparse.ArgumentParser(description="This code will take a sorted, uniquely mapped SAM file with a known set of UMIs and return a deduplicated SAM file when the known UMI, Chromosome, Strand, and corrected Start position are all the same. The first duplicate will be written to the output file. ")
+    parser = argparse.ArgumentParser(description="This code will take a sorted, uniquely mapped, single-end reads SAM file with a known set of UMIs and return a deduplicated SAM file when the known UMI, Chromosome, Strand, and corrected Start position are all the same. The first duplicate will be written to the output file.")
     parser.add_argument("-f",  "--file", help="designates absolute file path to sorted sam file", required = True)
     parser.add_argument("-o", "--outfile", help = "designates absolute file path to sorted sam file", required = True)
     parser.add_argument("-u", "--umi", help = "designates file containing the list of UMIs", required = True)
